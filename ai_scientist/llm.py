@@ -31,8 +31,8 @@ AVAILABLE_LLMS = [
     "o3-mini",
     "o3-mini-2025-01-31",
     # DeepSeek Models
-    "deepseek-coder-v2-0724",
-    "deepcoder-14b",
+    "deepseek-chat",
+    "deepseek-reasoner",
     # Llama 3 models
     "llama3.1-405b",
     # Anthropic Claude models via Amazon Bedrock
@@ -97,10 +97,27 @@ def get_batch_responses_from_llm(
         new_msg_history = [
             new_msg_history + [{"role": "assistant", "content": c}] for c in content
         ]
-    elif model == "deepseek-coder-v2-0724":
+    elif model == "deepseek-chat":
         new_msg_history = msg_history + [{"role": "user", "content": msg}]
         response = client.chat.completions.create(
-            model="deepseek-coder",
+            model="deepseek-chat",
+            messages=[
+                {"role": "system", "content": system_message},
+                *new_msg_history,
+            ],
+            temperature=temperature,
+            max_tokens=MAX_NUM_TOKENS,
+            n=n_responses,
+            stop=None,
+        )
+        content = [r.message.content for r in response.choices]
+        new_msg_history = [
+            new_msg_history + [{"role": "assistant", "content": c}] for c in content
+        ]
+    elif model == "deepseek-reasoner":
+        new_msg_history = msg_history + [{"role": "user", "content": msg}]
+        response = client.chat.completions.create(
+            model="deepseek-reasoner",
             messages=[
                 {"role": "system", "content": system_message},
                 *new_msg_history,
@@ -283,10 +300,10 @@ def get_response_from_llm(
         )
         content = response.choices[0].message.content
         new_msg_history = new_msg_history + [{"role": "assistant", "content": content}]
-    elif model == "deepseek-coder-v2-0724":
+    elif model == "deepseek-reasoner":
         new_msg_history = msg_history + [{"role": "user", "content": msg}]
         response = client.chat.completions.create(
-            model="deepseek-coder",
+            model="deepseek-reasoner",
             messages=[
                 {"role": "system", "content": system_message},
                 *new_msg_history,
@@ -432,11 +449,12 @@ def create_client(model) -> tuple[Any, str]:
     elif "o1" in model or "o3" in model:
         print(f"Using OpenAI API with model {model}.")
         return openai.OpenAI(), model
-    elif model == "deepseek-coder-v2-0724":
+    elif model == "deepseek-reasoner":
         print(f"Using OpenAI API with {model}.")
         return (
             openai.OpenAI(
-                api_key=os.environ["DEEPSEEK_API_KEY"],
+                # api_key=os.environ["DEEPSEEK_API_KEY"],
+                api_key="sk-02e0a37f57634d2dbaa9c29d5089ac21",
                 base_url="https://api.deepseek.com",
             ),
             model,
